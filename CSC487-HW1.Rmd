@@ -1,0 +1,231 @@
+---
+title: "CSC487-HW1"
+author: "Corey Malone"
+date: "2025-01-29"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+############################################################
+# 1. Work with "Su_raw_matrix.txt" 
+############################################################
+
+```{r}
+library(ggplot2)
+
+# (a) Read data using read.delim
+#    'header=TRUE' means we assume the first row is column names.
+su <- read.delim("Su_raw_matrix.txt", header = TRUE)
+
+# Let's quickly check the structure (optional)
+str(su)
+```
+
+```{r}
+# (b) Compute mean and standard deviation of Liver_2.CEL column
+mean_Liver2 <- mean(su$Liver_2.CEL, na.rm = TRUE)  # na.rm=TRUE to ignore any NA values
+sd_Liver2   <- sd(su$Liver_2.CEL, na.rm = TRUE)
+
+# Print results
+cat("Mean of Liver_2.CEL:", mean_Liver2, "\n")
+cat("SD of Liver_2.CEL:", sd_Liver2, "\n")
+
+# (c) Get average (colMeans) and total (colSums) values for each column
+column_means <- colMeans(su, na.rm = TRUE)
+column_sums  <- colSums(su, na.rm = TRUE)
+
+cat("\nColumn means:\n")
+print(column_means)
+
+cat("\nColumn sums:\n")
+print(column_sums)
+```
+
+############################################################
+# 2. Generate random numbers from normal distributions and plot histograms 
+############################################################
+
+We'll generate 10,000 random values from N(0, 0.2^2) and N(0, 0.5^2)
+Then plot histograms and comment on their differences.
+
+```{r}
+# (a) mean=0, sigma=0.2
+set.seed(123)  # Optional, for reproducible results
+x1 <- rnorm(10000, mean = 0, sd = 0.2)
+
+hist(x1,
+     main = "Histogram of N(0,0.2^2)",
+     xlab = "Values",
+     xlim = c(-5,5),   # so we can compare easily
+     breaks = 50,
+     col = "lightblue")
+```
+
+```{r}
+# (b) mean=0, sigma=0.5
+set.seed(123)
+x2 <- rnorm(10000, mean = 0, sd = 0.5)
+
+hist(x2,
+     main = "Histogram of N(0,0.5^2)",
+     xlab = "Values",
+     xlim = c(-5,5),
+     breaks = 50,
+     col = "lightpink")
+```
+# Comment on differences:
+ The distribution with sigma=0.2 is narrower (less spread),
+ while sigma=0.5 is wider (more spread). Both have mean 0.
+
+
+############################################################
+# 3. Use ggplot2 with "dat" and then "diabetes" 
+############################################################
+
+First, create a sample dataframe 'dat'
+```{r}
+dat <- data.frame(
+  cond = factor(rep(c("A", "B"), each = 200)),
+  rating = c(rnorm(200), rnorm(200, mean = 0.8))
+)
+```
+
+# (b) Overlaid histograms
+```{r}
+ggplot(dat, aes(x = rating, fill = cond)) +
+  geom_histogram(binwidth = 0.5, alpha = 0.5, position = "identity") +
+  ggtitle("Overlaid Histograms (dat)")
+```
+
+# (c) Interleaved histograms
+```{r}
+ggplot(dat, aes(x = rating, fill = cond)) +
+  geom_histogram(binwidth = 0.5, position = "dodge") +
+  ggtitle("Interleaved Histograms (dat)")
+```
+
+# (d) Density plots
+```{r}
+ggplot(dat, aes(x = rating, colour = cond)) +
+  geom_density() +
+  ggtitle("Density Plots (dat)")
+```
+
+# (e) Density plots with semitransparent fill
+```{r}
+ggplot(dat, aes(x = rating, fill = cond)) +
+  geom_density(alpha = 0.3) +
+  ggtitle("Density with Transparency (dat)")
+```
+
+# (f) Read "diabetes_train.csv" into 'diabetes' and 
+#     apply same functions for 'mass' attribute, grouping by 'class'
+```{r}
+diabetes <- read.csv("diabetes_train.csv", header = TRUE)
+str(diabetes)  # Check structure to see the column names
+```
+
+# Overlaid histograms for 'mass' by 'class'
+```{r}
+ggplot(diabetes, aes(x = mass, fill = class)) +
+  geom_histogram(binwidth = 1, alpha = 0.5, position = "identity") +
+  ggtitle("Overlaid Histograms (diabetes)")
+```
+
+
+# Interleaved histograms
+```{r}
+ggplot(diabetes, aes(x = mass, fill = class)) +
+  geom_histogram(binwidth = 1, position = "dodge") +
+  ggtitle("Interleaved Histograms (diabetes)")
+```
+
+
+# Density plots
+```{r}
+ggplot(diabetes, aes(x = mass, colour = class)) +
+  geom_density() +
+  ggtitle("Density Plots (diabetes)")
+```
+
+
+# Density plots with semitransparent fill
+```{r}
+ggplot(diabetes, aes(x = mass, fill = class)) +
+  geom_density(alpha = 0.3) +
+  ggtitle("Density with Transparency (diabetes)")
+```
+
+
+
+############################################################
+# 4. Read "titanic.csv" and do base R operations 
+############################################################
+
+```{r}
+passengers <- read.csv("titanic.csv", header = TRUE)
+```
+
+
+# (a) Drop NA rows and get summary
+```{r}
+passengers_noNA <- na.omit(passengers)  # Removes rows with any NA
+
+summary(passengers_noNA)
+```
+
+
+# (b) Filter (Sex == "male") using base R subset
+```{r}
+passengers_male <- subset(passengers, Sex == "male")
+# Print first rows (optional)
+head(passengers_male)
+```
+
+
+# (c) Arrange in descending order by Fare
+```{r}
+passengers_descFare <- passengers[order(-passengers$Fare), ]
+head(passengers_descFare)
+```
+
+
+# (d) Mutate: Add FamSize = Parch + SibSp
+```{r}
+passengers$FamSize <- passengers$Parch + passengers$SibSp
+head(passengers)
+```
+
+
+# (e) Group by Sex, summarise mean(Fare) and sum(Survived)
+#     We'll use tapply in base R.
+```{r}
+meanFare_bySex <- tapply(passengers$Fare, passengers$Sex, mean, na.rm = TRUE)
+numSurv_bySex  <- tapply(passengers$Survived, passengers$Sex, sum, na.rm = TRUE)
+
+# Combine results in a small data frame
+
+groupedResults <- data.frame(
+  Sex           = names(meanFare_bySex),
+  meanFare      = as.numeric(meanFare_bySex),
+  totalSurvived = as.numeric(numSurv_bySex)
+)
+
+groupedResults
+```
+
+
+
+############################################################
+# 5. Quantiles of 'skin' in the diabetes data 
+############################################################
+
+We need the 10th, 30th, 50th, 60th percentiles
+```{r}
+skin_quantiles <- quantile(diabetes$skin, probs = c(0.1, 0.3, 0.5, 0.6), na.rm = TRUE)
+cat("\nQuantiles (10%, 30%, 50%, 60%) of 'skin' in diabetes:\n")
+print(skin_quantiles)
+```
